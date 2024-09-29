@@ -1,0 +1,50 @@
+---
+title: "Data Wrangling Practice with R"
+description: "R-Ladies Rome Tutorials"
+author: Federica Gazzelloni
+date: "September 30, 2024"
+format: 
+  html:
+    toc: true
+---
+
+**Welcome to this course designed to introduce you to Data Wrangling Practice with R**
+
+## Instructor
+
+-   Name: **Federica Gazzelloni, IIA**
+-   Email: [fede.gazzelloni\@gmail.com](mailto:fede.gazzelloni@gmail.com){.email}
+-   Website: [federicagazzelloni.com](https://federicagazzelloni.com)
+-   LinkedIn: [federicagazzelloni](https://www.linkedin.com/in/federicagazzelloni/)
+
+## Course Description
+
+**Data Wrangling Practice with R** is a tutorial designed for individuals looking to enhance their data manipulation and transformation skills using the R programming language. Data wrangling, a critical step in any data analysis or machine learning pipeline, involves cleaning, structuring, and preparing raw data to ensure its usability for analysis.
+
+We will cover the basics of data wrangling, including data manipulation, data cleaning, and data transformation. We will use the `tidyverse` meta-package to perform these tasks. By the end of this course, you will be able to wrangle data in R and prepare it for analysis.
+
+## Learning Objectives
+
+-   Understand the importance of data wrangling in the data science workflow
+-   Learn how to clean and manipulate data using R
+-   Learn how to handle missing values, tidy data, and reshape datasets
+-   Prepare datasets for analysis and visualization
+
+## Prerequisites
+
+This course is designed for beginners. You should have a basic understanding of R and RStudio. If you are new to R, you may want to take an introductory course before taking this course.
+
+## Course Outline
+
+1. Introduction to Data Wrangling
+2. Essential Data Preparation Techniques
+3. Practice with `Cardio` Data
+4. Data Description
+5. Data Wrangling
+6. Joining Data
+7. Exporting Data
+8. Summary
+
+## Course Materials
+
+All course materials will be provided in the form of R scripts and R Quarto/Markdown files. You can download the materials from the GitHub repository <https://github.com/Fgazzelloni/20240930-DWPwR>.

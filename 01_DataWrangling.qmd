@@ -1,0 +1,487 @@
+---
+title: "Data Wrangling Practice with R"
+subtitle: "R-Ladies Rome Tutorials"
+author: "Federica Gazzelloni"
+date: "2024/09/30"
+format: 
+  html:
+    toc: true
+editor: visual
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| echo: false
+library(ggplot2)
+book_theme <- theme_minimal() + 
+  theme(plot.title=element_text(face="bold"))
+ggplot2::theme_set(book_theme)
+```
+
+## Introduction
+
+Data preparation is a foundational step in the data science process. It refers to the set of procedures used to `clean`, `organize`, and `structure` data, ensuring it is ready for analysis. Without proper data preparation, even the most sophisticated analytical models can produce unreliable results due to inconsistencies or noise in the data. In practice, **data preparation encompasses data wrangling, manipulation, and transformation techniques**, which are essential for obtaining high-quality, actionable insights.
+
+## Essential Data Preparation Techniques: Wrangling, Manipulation, and Transformation
+
+Data wrangling (also known as data munging) refers to the process of cleaning and organizing raw data to make it suitable for analysis. **Data Wrangling also include data manipulation and transformation techniques** that help to refine and structure the data for further analysis. These techniques are essential for ensuring data quality and consistency, enabling data scientists and analysts to derive meaningful insights from the data.
+
+**Data wrangling** involves cleaning raw data handling missing values, correcting errors, and merging datasets—to ensure accuracy and consistency. It also includes structuring data into a tidy format, where each variable is a column, each observation is a row, and each type of observational unit is a table. This format makes it easier to analyze and visualize data effectively.
+
+  - **Handling Missing Data**: Missing values (NA) are common in datasets. R provides several ways to address them, such as using is.na() to detect them, and na.omit() to remove them, or applying imputation methods to fill in missing values.
+  - **Dealing with Duplicates**: Identifying and removing duplicate rows is essential to avoid skewed results. The distinct() function in R’s dplyr package makes this task simple.
+  - **Standardizing Data Formats**: Ensuring consistent data types is crucial, especially for numeric, character, and factor variables. Functions like mutate() and as.numeric(), as.character(), or as.factor() help transform data into the appropriate format.
+
+**Data manipulation** builds on this by adjusting, filtering, and transforming specific aspects of the data, such as selecting relevant columns, filtering rows based on conditions, and creating new variables.
+
+  - **Filtering Data**: Filtering allows you to extract specific rows based on conditions. The filter() function in dplyr is useful for this task.
+  - **Sorting Data**: Sorting data helps organize it in a meaningful way. The arrange() function in dplyr can sort data by one or more columns.
+  - **Grouping Data**: Grouping data allows you to perform calculations on subsets of the data. The group_by() function in dplyr is used to group data by one or more variables.
+  - **Summarizing Data**: Summarizing data provides insights into the dataset's characteristics. The summarize() function in dplyr can calculate summary statistics like mean, median, and standard deviation.
+
+**Data transformation** goes deeper by reshaping the structure of the data (e.g., converting between wide and long formats), normalizing values, or applying mathematical operations like log transformations to ensure that the data is suitable for complex analysis or modeling.
+
+  - **Reshaping Data**: Reshaping data involves converting between wide and long formats using functions like gather() and spread() in tidyr.
+  - **Normalizing Data**: Normalizing data involves scaling values to a standard range, such as between 0 and 1, to ensure consistency across variables.
+  - **Applying Mathematical Operations**: Mathematical operations like log transformations, standardization, or normalization can help prepare data for advanced analyses like machine learning.
+
+These processes, often performed using R packages like dplyr, tidyr, and data.table, are crucial steps in converting raw, disorganized data into meaningful insights. Together, they form the foundation for effective data analytics, which uses cleaned and well-structured data to perform descriptive, predictive, and inferential analyses.
+
+## Practice with Cardio Data
+
+The data we will be working with is the `cardio_train.csv` dataset, which contains information on patients with cardiovascular disease. It can be found on `Kaggle` at the following link: [Cardiovascular Disease Dataset](https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset/data).
+
+### Data Description
+
+The dataset includes the following columns:
+
+| Column Name | Description | Variable Name | Data Type |
+|------------------|------------------|------------------|------------------|
+| Age | Objective Feature | age | int (days) |
+| Height | Objective Feature | height | int (cm) |
+| Weight | Objective Feature | weight | float (kg) |
+| Gender | Objective Feature | gender | categorical code |
+| Systolic blood pressure | Examination Feature | ap_hi | int |
+| Diastolic blood pressure | Examination Feature | ap_lo | int |
+| Cholesterol | Examination Feature | cholesterol | 1: normal, 2: above normal, 3: well above normal |
+| Glucose | Examination Feature | gluc | 1: normal, 2: above normal, 3: well above normal |
+| Smoking | Subjective Feature | smoke | binary |
+| Alcohol intake | Subjective Feature | alco | binary |
+| Physical activity | Subjective Feature | active | binary |
+| Presence or absence of cardiovascular disease | Target Variable | cardio | binary |
+
+### Load Libraries and Data
+
+Install the package if is not already installed:
+```{r}
+if (!require("tidyverse")) install.packages("tidyverse")
+```
+
+Load the `tidyverse` package:
+```{r}
+library(tidyverse)
+```
+
+### Import Data
+
+Unzip the file in the `data` folder:
+```{r}
+unzip("data/cardio_train.zip", exdir = "data")
+```
+
+We load the dataset using the `read.csv` function part of the base R package and used to read comma-separated values (CSV) files. It allows us to use the `sep = ";"` option, which is necessary for reading the `cardio_train.csv` file.
+
+```{r}
+?utils::read.csv
+```
+
+```{r}
+cardio_train <- read.csv("data/cardio_train.csv", sep=";")
+```
+
+### Inspect Data
+
+```{r}
+head(cardio_train)
+```
+
+```{r}
+cardio_train %>% glimpse()
+```
+
+This dataset contains 70000 observations and 13 variables. The variables include age (in days), height (in cm), weight (in kg), and others that describe the patients' health status and lifestyle factors.
+
+## Data Wrangling
+
+### Handling Missing Data
+
+- is.na()
+- na.omit()
+- drop_na()
+
+```{r}
+cardio_train %>% is.na() %>% colSums()
+```
+
+There are no missing values in this dataset.
+
+### Dealing with Duplicates
+
+- distinct()
+
+```{r}
+cardio_train %>% dim()
+cardio_train %>% distinct() %>% nrow()
+```
+
+
+Rename original data `cardio_train` to `cardio` for easier reference, and as a best practice to keep the original data intact:
+
+```{r}
+cardio <- cardio_train
+```
+
+### Standardizing Data Formats
+
+- mutate()
+- as.numeric()
+- as.character()
+- as.factor()
+
+Depending on the type of analysis we want to perform, we may need to convert the `age` variable from days to years. Let's see how we can create a new variable `age_years` that represents the age in years:
+
+```{r}
+cardio %>% 
+  mutate(age_years = age / 365.25) %>%
+  select(age, age_years) %>%
+  head()
+```
+
+We can use the `round` function to round the age in years to the nearest whole number:
+
+```{r}
+cardio %>% 
+  mutate(age_years = round(age / 365.25)) %>%
+  head()
+```
+
+## Data Manipulation
+
+### Subsetting Data
+
+- select()
+- filter()
+
+Let's select a subset of columns from the dataset:
+```{r}
+cardio %>% 
+  mutate(age_years = round(age / 365.25)) %>%
+  select(age, age_years) %>%
+  head()
+```
+Let's filter a subset of columns from the dataset:
+```{r}
+cardio %>% 
+  mutate(age_years = round(age / 365.25)) %>%
+  select(age, age_years) %>%
+  filter(age_years > 50) %>%
+  head()
+```
+
+### Grouping and Summarizing Data 
+
+- group_by()
+- summarize()
+
+```{r}
+cardio %>% 
+  mutate(age_years = round(age / 365.25)) %>%
+  group_by(age_years) %>%
+  summarize(mean_weight = mean(weight, na.rm = TRUE),
+            median_height = median(height, na.rm = TRUE)) %>%
+  head()
+```
+
+### Creating New Variables
+
+- mutate()
+
+Let's create a new variable `bmi` (Body Mass Index) by calculating the weight in kilograms divided by the square of the height in meters:
+
+```{r}
+cardio %>% 
+  mutate(bmi = weight / ((height / 100) ^ 2)) %>%
+  select(weight, height, bmi) %>%
+  head()
+```
+
+Let's filter the dataset to include only patients with a BMI greater than 30 (obese patients):
+
+```{r}
+cardio %>% 
+  mutate(bmi = weight / ((height / 100) ^ 2)) %>%
+  select(weight, height, bmi) %>%
+  filter(bmi > 30) %>%
+  head()
+```
+
+```{r}
+cardio %>% 
+  mutate(cholesterol = factor(cholesterol, 
+                              levels = c('norm' = 1, 'a_norm' = 2, 'wa_norm' = 3),
+                              labels = c('norm', 'a_norm', 'aw_norm')),
+         gluc = factor(gluc, 
+                       levels = c('norm' = 1, 'a_norm' = 2, 'wa_norm' = 3), 
+                       labels = c('norm', 'a_norm', 'wa_norm')),
+         smoke = factor(smoke, 
+                        levels = c('non smoker' = 0, 'smoker' = 1), 
+                        labels = c('non smoker', 'smoker')),
+         alco = factor(alco, 
+                       levels = c('non alc' = 0, 'alc' = 1), 
+                       labels = c('non alc', 'alc')),
+         active = factor(active, 
+                         levels = c('non active' = 0, 'active' = 1), 
+                         labels = c('non active', 'active')),
+         gender = factor(gender, 
+                         levels = c('female' = 1, 'male' = 2), 
+                         labels = c('female', 'male')),
+         cardio = factor(cardio, 
+                         levels = c('healthy' = 0, 'sick' = 1), 
+                         labels = c('healthy', 'sick')),
+         bmi = weight / ((height / 100) ^ 2)) %>%
+  ggplot(aes(x = bmi, fill = gender)) + 
+  geom_histogram(binwidth = 2) +
+  xlim(0, 100) +
+  labs(title = "BMI Distribution by Gender",
+       x = "BMI",
+       y = "Count") 
+```
+
+### Sorting Data
+
+Let's sort the dataset by age in descending order:
+
+```{r}
+cardio %>% 
+  arrange(desc(age)) %>%
+  select(age) %>%
+  head()
+```
+
+### More Grouping
+
+Let's group the data by cardio, and age in years and calculate the average BMI for each age group:
+
+```{r}
+cardio %>% 
+  mutate(age_years = round(age / 365.25),
+         bmi = weight / ((height / 100) ^ 2)) %>%
+  group_by(cardio, age_years) %>%
+  summarize(avg_bmi = mean(bmi, na.rm = TRUE)) %>%
+  head()
+```
+
+```{r}
+cardio %>% 
+  mutate(age_years = round(age / 365.25),
+         bmi = weight / ((height / 100) ^ 2),
+         cardio = factor(cardio, labels = c("CVD", "NO CVD"))) %>%
+  group_by(cardio, age_years) %>%
+  summarize(avg_bmi = mean(bmi, na.rm = TRUE)) %>%
+  ggplot(aes(x = age_years, y = avg_bmi)) +
+  geom_point() +
+  geom_smooth(linewidth = 0.5, 
+              linetype = "dashed",
+              se = F) +
+  facet_wrap( ~ cardio, scales = "free")
+```
+
+Let's group the data by cardio, age_years, and gender to calculate the average BMI for each group:
+
+```{r}
+cardio %>% 
+  mutate(age_years = round(age / 365.25),
+         bmi = weight / ((height / 100) ^ 2),
+         cardio = factor(cardio, labels = c("CVD", "NO CVD")),
+         gender = factor(gender, labels = c("Female", "Male"))) %>%
+  group_by(cardio, age_years, gender) %>%
+  summarize(avg_bmi = mean(bmi, na.rm = TRUE)) %>%
+  ggplot(aes(x = age_years, y = avg_bmi, 
+             group = gender,
+             color = gender)) +
+  geom_point() +
+  scale_y_log10() +
+  geom_smooth(linewidth = 0.5, 
+              linetype = "dashed",
+              se = F) +
+  facet_wrap( ~ cardio, scales = "free")
+```
+
+Let's group the data by cardio, age_years, gender, and smoke status to calculate the average age for each group:
+
+```{r}
+avg_bmi_agey <- cardio %>%
+  mutate(age_years = round(age / 365.25),
+         bmi = weight / ((height / 100) ^ 2),
+         cardio = factor(cardio, labels = c("CVD", "NO CVD")),
+         smoke = factor(smoke, labels = c("Non-Smoker", "Smoker")),
+         gender = factor(gender, labels = c("Female", "Male"))) %>%
+  group_by(cardio, age_years, gender, smoke) %>%
+  reframe(n = n(),
+          avg_bmi = mean(bmi, na.rm = TRUE)) %>%
+  arrange(age_years)
+
+avg_bmi_agey %>%
+  head()
+```
+
+```{r}
+avg_bmi_agey %>%
+  ggplot(aes(x = age_years, y = avg_bmi, 
+             group = gender,
+             color = gender)) +
+  geom_point() +
+  scale_y_log10() +
+  geom_smooth(linewidth = 0.5, 
+              linetype = "dashed",
+              se = F) +
+  facet_wrap(cardio ~ smoke, scales = "free")
+```
+
+### Summary Statistics
+
+Let's calculate the summary statistics for the all variables:
+
+```{r}
+cardio %>% 
+  map_df(~summary(.), .id = "var") %>%
+  column_to_rownames(var = "var") %>%
+  janitor::clean_names() %>%
+  mutate(mean = round(mean)) %>%
+  relocate(mean, median, min, max)
+```
+
+```{r}
+cardio %>% 
+  summarize(mean_age = mean(age),
+            median_age = median(age),
+            min_age = min(age),
+            max_age = max(age),
+            sd_age = sd(age))
+```
+
+```{r}
+cardio %>%
+  mutate(id = row.names("id"),
+         gender = as.factor(gender),
+         smoke = as.factor(smoke),
+         active = as.factor(active),
+         cardio = as.factor(cardio)) %>%
+  # summarize stats only for numeric variables
+  summarize(across(where(is.numeric), 
+                   list(mean = mean, 
+                        median = median, 
+                        sd = sd))) %>%
+  t()
+```
+
+## Data Transformation
+
+### Combining Datasets
+
+- left_join()
+- inner_join()
+- right_join()
+- full_join()
+- bind_rows()/bind_cols()
+- merge()
+
+In some cases, we may need to combine multiple datasets to perform more complex analyses. We can use the `left_join` function from the `dplyr` package to join two datasets based on a common key.
+
+Let's create a new dataset `cardio2` by adding a new variable `bmi` to the original dataset `cardio`:
+
+```{r}
+cardio2 <- cardio %>% 
+  mutate(bmi = weight / ((height / 100) ^ 2))
+```
+
+Let's join the `cardio` and `cardio2` datasets based on the `id` variable:
+
+```{r}
+cardio_join <- left_join(cardio, cardio2, by = "id")
+```
+
+Let's check the first few rows of the joined dataset:
+
+```{r}
+head(cardio_join)
+```
+
+### Pivoting Data
+
+- pivot_longer()
+- pivot_wider()
+
+```{r}
+cardio %>% 
+  pivot_longer(cols = c(cholesterol, gluc),
+               names_to = "exam_type",
+               values_to = "result") %>%
+  head()
+```
+
+### Tidying Data
+
+- gather()
+- spread()
+- separate()
+- unite()
+
+```{r}
+cardio %>% 
+  gather(key = "variable", value = "value", -id) %>%
+  head()
+```
+
+```{r}
+cardio %>% 
+  gather(key = "variable", value = "value", -id) %>%
+  separate(variable, into = c("feature", "type"), sep = "_") %>%
+  head()
+```
+
+```{r}
+cardio %>% 
+  gather(key = "variable", value = "value", -id) %>%
+  separate(variable, into = c("feature", "type"), sep = "_") %>%
+  spread(key = type, value = value) %>%
+  head()
+```
+
+## Exporting Data
+
+Once we have cleaned and transformed the data, we may want to export it to a file for further analysis or sharing. We can use the `write.csv` function to export the data to a CSV file.
+
+Let's export the `cardio` dataset to a CSV file named `cardio_cleaned.csv`:
+
+```{r}
+write.csv(cardio, "data/cardio_cleaned.csv", row.names = FALSE)
+```
+
+## Summary
+
+Data wrangling, manipulation, and transformation are essential techniques for preparing and refining data for analysis. By cleaning, transforming, and organizing raw data, we can ensure its accuracy and consistency, making it suitable for analysis and visualization. These processes form the foundation for effective data analytics, enabling us to derive meaningful insights and make informed decisions based on the data.
+
+In this tutorial, we explored various data wrangling techniques using the `cardio_train.csv` dataset, including checking for missing values, transforming variables, filtering and sorting data, grouping data, and calculating summary statistics. By applying these techniques, we gained valuable insights into the dataset and learned how to manipulate and analyze data effectively using R.
+
+Data wrangling is a critical skill for data scientists and analysts, as it allows them to work with raw data and prepare it for analysis. By mastering these techniques, you can ensure that your data is clean, well-structured, and ready for further analysis, enabling you to derive meaningful insights and make informed decisions based on the data.
+
+## References
+
+-   [Cardiovascular Disease Dataset on Kaggle](https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset/data)
+-   [R for Data Science](https://r4ds.hadley.nz/)
+-   [Tidyverse Learn Documentation](https://www.tidyverse.org/learn/)
+References
+- [Tidy Data](https://vita.had.co.nz/papers/tidy-data.pdf) by Wickham, H. (2014). Journal of Statistical Software, 59(10), 1-23.

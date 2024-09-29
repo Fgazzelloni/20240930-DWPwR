@@ -1,0 +1,4 @@
+- source: project
+  quarto-pub:
+    - id: 757f226d-c160-4bbd-a949-6934d33fbd3a
+      url: 'https://rladiesrome.quarto.pub/data-wrangling-practice-with-r'

@@ -1,0 +1,32 @@
+project:
+  type: website
+
+website:
+  page-navigation: true
+  title: "Data Wrangling Practice with R"
+  site-url: "" 
+  repo-url: https://github.com/Fgazzelloni/20240930-DWPwR
+  repo-actions: [edit, issue]
+  
+  page-footer:
+    right: "This page is built with ❤️ and [Quarto](https://quarto.org/)."
+    left: "&copy; CC-By R-Ladies Rome 2024"  
+  
+  sidebar:
+    logo: "images/RLR_logo.png"
+    style: "docked"
+    search: true
+    collapse-level: 1
+    contents:
+      - href: index.qmd
+        text: Welcome 
+      - href: 01_DataWrangling.qmd  
+        text: Data Wrangling
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+
+editor: visual
+
