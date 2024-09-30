@@ -62,7 +62,7 @@ The dataset includes the following columns:
 | Age | Objective Feature | age | int (days) |
 | Height | Objective Feature | height | int (cm) |
 | Weight | Objective Feature | weight | float (kg) |
-| Gender | Objective Feature | gender | categorical code |
+| Gender | Objective Feature | gender | categorical (1 w, 2 m) |
 | Systolic blood pressure | Examination Feature | ap_hi | int |
 | Diastolic blood pressure | Examination Feature | ap_lo | int |
 | Cholesterol | Examination Feature | cholesterol | 1: normal, 2: above normal, 3: well above normal |
@@ -72,7 +72,7 @@ The dataset includes the following columns:
 | Physical activity | Subjective Feature | active | binary |
 | Presence or absence of cardiovascular disease | Target Variable | cardio | binary |
 
-### Load Libraries and Data
+### Libraries and Data
 
 Install the package if is not already installed:
 ```{r}
@@ -117,9 +117,9 @@ This dataset contains 70000 observations and 13 variables. The variables include
 
 ### Handling Missing Data
 
-- is.na()
-- na.omit()
-- drop_na()
+- `is.na()`
+- `na.omit()`
+- `drop_na()`
 
 ```{r}
 cardio_train %>% is.na() %>% colSums()
@@ -129,7 +129,7 @@ There are no missing values in this dataset.
 
 ### Dealing with Duplicates
 
-- distinct()
+- `distinct()`
 
 ```{r}
 cardio_train %>% dim()
@@ -145,25 +145,17 @@ cardio <- cardio_train
 
 ### Standardizing Data Formats
 
-- mutate()
-- as.numeric()
-- as.character()
-- as.factor()
+- `mutate()`
+- `as.numeric()`
+- `as.character()`
+- `as.factor()`
 
-Depending on the type of analysis we want to perform, we may need to convert the `age` variable from days to years. Let's see how we can create a new variable `age_years` that represents the age in years:
-
-```{r}
-cardio %>% 
-  mutate(age_years = age / 365.25) %>%
-  select(age, age_years) %>%
-  head()
-```
-
-We can use the `round` function to round the age in years to the nearest whole number:
+Depending on the type of analysis we want to perform, we may need to convert the `age` variable from days to years. Let's see how we can create a new variable `age_years` that represents the age in years, we can use the `round` function to round the age in years to the nearest whole number:
 
 ```{r}
 cardio %>% 
-  mutate(age_years = round(age / 365.25)) %>%
+  mutate(age_years = round(age / 365.25), 
+         .after = age) %>%
   head()
 ```
 
@@ -171,8 +163,8 @@ cardio %>%
 
 ### Subsetting Data
 
-- select()
-- filter()
+- `select()`
+- `filter()`
 
 Let's select a subset of columns from the dataset:
 ```{r}
@@ -192,28 +184,30 @@ cardio %>%
 
 ### Grouping and Summarizing Data 
 
-- group_by()
-- summarize()
+- `group_by()`
+- `summarize()`
 
 ```{r}
 cardio %>% 
   mutate(age_years = round(age / 365.25)) %>%
-  group_by(age_years) %>%
-  summarize(mean_weight = mean(weight, na.rm = TRUE),
+  group_by(cholesterol) %>%
+  summarize(mean_age = round(mean(age_years, na.rm = TRUE)),
+            mean_weight = mean(weight, na.rm = TRUE),
             median_height = median(height, na.rm = TRUE)) %>%
   head()
 ```
 
 ### Creating New Variables
 
-- mutate()
+- `mutate()`
 
 Let's create a new variable `bmi` (Body Mass Index) by calculating the weight in kilograms divided by the square of the height in meters:
 
 ```{r}
 cardio %>% 
-  mutate(bmi = weight / ((height / 100) ^ 2)) %>%
-  select(weight, height, bmi) %>%
+  mutate(age_years = round(age / 365.25),
+         bmi = weight / ((height / 100) ^ 2)) %>%
+  select(cardio, age_years, weight, height, bmi, cholesterol) %>%
   head()
 ```
 
@@ -221,35 +215,18 @@ Let's filter the dataset to include only patients with a BMI greater than 30 (ob
 
 ```{r}
 cardio %>% 
-  mutate(bmi = weight / ((height / 100) ^ 2)) %>%
-  select(weight, height, bmi) %>%
+  mutate(age_years = round(age / 365.25),
+         bmi = weight / ((height / 100) ^ 2)) %>%
+  select(cardio, age_years, weight, height, bmi, cholesterol)  %>%
   filter(bmi > 30) %>%
   head()
 ```
 
 ```{r}
 cardio %>% 
-  mutate(cholesterol = factor(cholesterol, 
-                              levels = c('norm' = 1, 'a_norm' = 2, 'wa_norm' = 3),
-                              labels = c('norm', 'a_norm', 'aw_norm')),
-         gluc = factor(gluc, 
-                       levels = c('norm' = 1, 'a_norm' = 2, 'wa_norm' = 3), 
-                       labels = c('norm', 'a_norm', 'wa_norm')),
-         smoke = factor(smoke, 
-                        levels = c('non smoker' = 0, 'smoker' = 1), 
-                        labels = c('non smoker', 'smoker')),
-         alco = factor(alco, 
-                       levels = c('non alc' = 0, 'alc' = 1), 
-                       labels = c('non alc', 'alc')),
-         active = factor(active, 
-                         levels = c('non active' = 0, 'active' = 1), 
-                         labels = c('non active', 'active')),
-         gender = factor(gender, 
+  mutate(gender = factor(gender, 
                          levels = c('female' = 1, 'male' = 2), 
                          labels = c('female', 'male')),
-         cardio = factor(cardio, 
-                         levels = c('healthy' = 0, 'sick' = 1), 
-                         labels = c('healthy', 'sick')),
          bmi = weight / ((height / 100) ^ 2)) %>%
   ggplot(aes(x = bmi, fill = gender)) + 
   geom_histogram(binwidth = 2) +
@@ -261,19 +238,23 @@ cardio %>%
 
 ### Sorting Data
 
-Let's sort the dataset by age in descending order:
+- `arrange()`
 
+Let's sort the dataset by age in descending order:
 ```{r}
 cardio %>% 
+  mutate(age_years = round(age / 365.25)) %>%
   arrange(desc(age)) %>%
-  select(age) %>%
+  select(age, age_years) %>%
   head()
 ```
 
 ### More Grouping
 
-Let's group the data by cardio, and age in years and calculate the average BMI for each age group:
+- `group_by()`
+- `summarize()`
 
+Let's group the data by `cardio`, and `age` in years and calculate the average `BMI` for each age group:
 ```{r}
 cardio %>% 
   mutate(age_years = round(age / 365.25),
@@ -298,64 +279,16 @@ cardio %>%
   facet_wrap( ~ cardio, scales = "free")
 ```
 
-Let's group the data by cardio, age_years, and gender to calculate the average BMI for each group:
-
-```{r}
-cardio %>% 
-  mutate(age_years = round(age / 365.25),
-         bmi = weight / ((height / 100) ^ 2),
-         cardio = factor(cardio, labels = c("CVD", "NO CVD")),
-         gender = factor(gender, labels = c("Female", "Male"))) %>%
-  group_by(cardio, age_years, gender) %>%
-  summarize(avg_bmi = mean(bmi, na.rm = TRUE)) %>%
-  ggplot(aes(x = age_years, y = avg_bmi, 
-             group = gender,
-             color = gender)) +
-  geom_point() +
-  scale_y_log10() +
-  geom_smooth(linewidth = 0.5, 
-              linetype = "dashed",
-              se = F) +
-  facet_wrap( ~ cardio, scales = "free")
-```
-
-Let's group the data by cardio, age_years, gender, and smoke status to calculate the average age for each group:
-
-```{r}
-avg_bmi_agey <- cardio %>%
-  mutate(age_years = round(age / 365.25),
-         bmi = weight / ((height / 100) ^ 2),
-         cardio = factor(cardio, labels = c("CVD", "NO CVD")),
-         smoke = factor(smoke, labels = c("Non-Smoker", "Smoker")),
-         gender = factor(gender, labels = c("Female", "Male"))) %>%
-  group_by(cardio, age_years, gender, smoke) %>%
-  reframe(n = n(),
-          avg_bmi = mean(bmi, na.rm = TRUE)) %>%
-  arrange(age_years)
-
-avg_bmi_agey %>%
-  head()
-```
-
-```{r}
-avg_bmi_agey %>%
-  ggplot(aes(x = age_years, y = avg_bmi, 
-             group = gender,
-             color = gender)) +
-  geom_point() +
-  scale_y_log10() +
-  geom_smooth(linewidth = 0.5, 
-              linetype = "dashed",
-              se = F) +
-  facet_wrap(cardio ~ smoke, scales = "free")
-```
-
 ### Summary Statistics
 
-Let's calculate the summary statistics for the all variables:
+- `summary()`
 
+Let's calculate the summary statistics for the all variables:
 ```{r}
 cardio %>% 
+  mutate(age_years = round(age / 365.25),
+         bmi = weight / ((height / 100) ^ 2),
+         .after = age) %>%
   map_df(~summary(.), .id = "var") %>%
   column_to_rownames(var = "var") %>%
   janitor::clean_names() %>%
@@ -363,14 +296,7 @@ cardio %>%
   relocate(mean, median, min, max)
 ```
 
-```{r}
-cardio %>% 
-  summarize(mean_age = mean(age),
-            median_age = median(age),
-            min_age = min(age),
-            max_age = max(age),
-            sd_age = sd(age))
-```
+Let's calculate the summary statistics for the numeric variables only:
 
 ```{r}
 cardio %>%
@@ -391,83 +317,179 @@ cardio %>%
 
 ### Combining Datasets
 
-- left_join()
-- inner_join()
-- right_join()
-- full_join()
-- bind_rows()/bind_cols()
-- merge()
+- `left_join()`
+- `inner_join()`
+- `right_join()`
+- `full_join()`
+- `bind_rows()`/`bind_cols()`
+- `merge()`
 
-In some cases, we may need to combine multiple datasets to perform more complex analyses. We can use the `left_join` function from the `dplyr` package to join two datasets based on a common key.
-
-Let's create a new dataset `cardio2` by adding a new variable `bmi` to the original dataset `cardio`:
-
+In some cases, we may need to combine multiple datasets to perform more complex analyses. We can use one of the `join` functions from the `dplyr` package to join two datasets based on a common key.
 ```{r}
-cardio2 <- cardio %>% 
-  mutate(bmi = weight / ((height / 100) ^ 2))
+cardio %>% 
+  mutate(age_years = round(age / 365.25)) %>%
+  pull(age_years) %>%
+  summary()
 ```
 
-Let's join the `cardio` and `cardio2` datasets based on the `id` variable:
+Let's group `age` by intervals and count the number of observations in each group:
+```{r}
+cardio %>% 
+  mutate(id = row.names("id"),
+         age_years = round(age / 365.25),
+         # group age_years in intervals and assign it to a new variable
+         age_group = cut_interval(age_years, 
+                                  n = 4, 
+                                  labels = c("5-14", "15-49", "50-69", "70+")),
+         .after = age) %>%
+  arrange(age_years) %>%
+  count(age_group)
+```
+
+Let's create a new dataset `cardio2` by adding a new variable `bmi`, other transformations to the original dataset `cardio`:
+```{r}
+cardio2 <- cardio %>% 
+  mutate(id = row.names("id"),
+         age_years = round(age / 365.25),
+         age_group = cut_interval(age_years, 
+                                  n = 4, 
+                                  labels = c("5-14", "15-49", 
+                                             "50-69","70+")),
+         bmi = weight / ((height / 100) ^ 2),
+         cardio = factor(cardio, levels = c(0,1)),
+         gender = factor(gender, 
+                         levels = c(1,2),
+                         labels = c("female", "male")),
+         smoke = factor(smoke, levels = c(0,1))) %>%
+  select(cardio, age_group, gender, 
+         weight, height, smoke, 
+         cholesterol, gluc, bmi)  %>%
+  filter(bmi > 30) %>% 
+  distinct() 
+```
+
+And now create `cardio3` dataset with the mean values for `bmi`, `weight`, `height`, and the `count` of observations for each group:
+```{r}
+cardio3 <- cardio2 %>%
+  group_by(cardio, age_group, gender, smoke, cholesterol, gluc) %>%
+  reframe(mean_bmi = mean(bmi, na.rm = TRUE),
+          mean_weight = mean(weight, na.rm = TRUE),
+          mean_height = mean(height, na.rm = TRUE),
+          count = n())
+```
+
 
 ```{r}
-cardio_join <- left_join(cardio, cardio2, by = "id")
+cardio3 %>% head()
+```
+
+Let's join the `cardio3` with a new dataset `cardio_deaths` with the deaths rates due to cardiovascular diseases by country and year, data is from the [IHME website](https://www.healthdata.org/):
+```{r}
+cardio_deaths <- read_csv("data/cardio_deaths.csv")
+cardio_deaths %>% head()
+```
+
+Let's check the dimensions of the `cardio3` and `cardio_deaths` datasets:
+```{r}
+cardio3 %>% dim();
+cardio_deaths %>% dim()
+```
+
+Let's join the `cardio3` and `cardio_deaths` datasets using the `right_join` function from the `dplyr` package:
+```{r}
+cardio_join <- cardio_deaths %>% 
+  group_by(age, gender) %>%
+  reframe(avg_deaths = mean(value, na.rm = TRUE)) %>%
+  right_join(cardio3, 
+            by = c("age" = "age_group", "gender"))
+```
+
+Let's check the dimensions of the joined dataset and the number of distinct rows:
+```{r}
+cardio_join %>% dim;
+cardio_join %>% distinct() %>% dim()
 ```
 
 Let's check the first few rows of the joined dataset:
-
 ```{r}
 head(cardio_join)
 ```
 
-### Pivoting Data
+### Tidying Data
 
-- pivot_longer()
-- pivot_wider()
+- `pivot_longer()`
+- `pivot_wider()`
+- `gather()` - the same as `pivot_longer()`
+- `spread()` - the same as `pivot_wider()`
+- `separate()`
+- `unite()`
 
+Let's pivot the `cardio_join` dataset from wide to long format to separate the `cholesterol` and `gluc` variables into a single column `exam_type` and a single column `result`:
 ```{r}
-cardio %>% 
+cardio_join_long <- cardio_join %>% 
   pivot_longer(cols = c(cholesterol, gluc),
                names_to = "exam_type",
                values_to = "result") %>%
+  select(cardio, age, exam_type, result) 
+
+cardio_join_long %>%
   head()
 ```
 
-### Tidying Data
-
-- gather()
-- spread()
-- separate()
-- unite()
-
+Let's check the dimensions of the `cardio_join_long` dataset and the number of distinct rows:
 ```{r}
-cardio %>% 
-  gather(key = "variable", value = "value", -id) %>%
+cardio_join_long %>% dim();
+cardio_join_long %>% distinct() %>% dim()
+```
+
+Let's remove duplicate rows from the `cardio_join_long` dataset:
+```{r}
+cardio_join_long <- cardio_join_long %>% 
+  distinct()
+```
+
+Let's pivot the `cardio_join_long` dataset back to the original format:
+```{r}
+cardio_join_long %>% 
+  group_by(cardio, age) %>%
+  pivot_wider(names_from = exam_type,
+              values_from = result) %>%
+  # unlist the nested columns
+  unnest(cols = c(cholesterol, gluc)) %>%
   head()
 ```
 
+And, let's separate the `age` variable into two columns `age_group_start` and `age_group_end`:
 ```{r}
-cardio %>% 
-  gather(key = "variable", value = "value", -id) %>%
-  separate(variable, into = c("feature", "type"), sep = "_") %>%
+cardio_join_age_group_sep <- cardio_join %>%
+  separate(col = "age",
+           into = c("age_group_start", "age_group_end"),
+           remove = F) %>%
+  select(cardio, age_group_start, age_group_end) 
+
+cardio_join_age_group_sep %>%
   head()
 ```
 
+Then, let's unite the `age_group_start` and `age_group_end` columns back into a single column `age`:
 ```{r}
-cardio %>% 
-  gather(key = "variable", value = "value", -id) %>%
-  separate(variable, into = c("feature", "type"), sep = "_") %>%
-  spread(key = type, value = value) %>%
+cardio_join_age_group_sep %>%
+  unite(col = "age",
+        age_group_start, age_group_end, sep = "-") %>%
+  select(cardio, age) %>%
   head()
 ```
 
 ## Exporting Data
 
+- `write.csv()`
+
 Once we have cleaned and transformed the data, we may want to export it to a file for further analysis or sharing. We can use the `write.csv` function to export the data to a CSV file.
 
-Let's export the `cardio` dataset to a CSV file named `cardio_cleaned.csv`:
+Let's export the `cardio_join` dataset to a CSV file named `cardio_cleaned.csv`:
 
 ```{r}
-write.csv(cardio, "data/cardio_cleaned.csv", row.names = FALSE)
+write.csv(cardio_join, "data/cardio_cleaned.csv", row.names = FALSE)
 ```
 
 ## Summary
@@ -481,7 +503,7 @@ Data wrangling is a critical skill for data scientists and analysts, as it allow
 ## References
 
 -   [Cardiovascular Disease Dataset on Kaggle](https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset/data)
--   [R for Data Science](https://r4ds.hadley.nz/)
+- [IHME website](https://www.healthdata.org/)
+-   [R for Data Science](https://r4ds.hadley.nz/) by Wickham, H., & Grolemund, G. (2017). O'Reilly Media.
 -   [Tidyverse Learn Documentation](https://www.tidyverse.org/learn/)
-References
-- [Tidy Data](https://vita.had.co.nz/papers/tidy-data.pdf) by Wickham, H. (2014). Journal of Statistical Software, 59(10), 1-23.
+- [Tidy Data](https://vita.had.co.nz/papers/tidy-data.pdf) by Wickham, H. (2014). Journal of Statistical Software, 59(10), 1-23
